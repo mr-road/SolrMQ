@@ -26,8 +26,12 @@ import com.rabbitmq.client.ConnectionFactory;
 import com.rabbitmq.client.ConsumerCancelledException;
 import com.rabbitmq.client.QueueingConsumer;
 import com.rabbitmq.client.ShutdownSignalException;
+import java.io.UnsupportedEncodingException;
 
 import org.apache.solr.request.SolrQueryRequestBase;
+
+import org.apache.log4j.Logger;
+import org.apache.log4j.Level;
 
 public class SolrMessageQueue extends RequestHandlerBase implements SolrCoreAware {
 
@@ -38,6 +42,8 @@ public class SolrMessageQueue extends RequestHandlerBase implements SolrCoreAwar
     protected Boolean durable = Boolean.FALSE;
     protected SolrCore core;
 
+    Logger  logger = Logger.getLogger("org.apache.solr.handler.ext.SolrMessageQueue");
+    
     public SolrMessageQueue() {}
 
     @Override
@@ -94,11 +100,11 @@ public class SolrMessageQueue extends RequestHandlerBase implements SolrCoreAwar
         MultiMapSolrParams solrParams = new MultiMapSolrParams(params);
         SolrRequestHandler requestHandler = core.getRequestHandler(handler);
 
-        SolrQueryRequestBase request = new SolrQueryRequestBase(core, solrParams){};
-
         ContentStream stream = new ContentStreamBase.StringStream(message);
         ArrayList<ContentStream> streams = new ArrayList<ContentStream>();
         streams.add(stream);
+        
+        SolrQueryRequestBase request = new SolrQueryRequestBase(core, solrParams){};
         request.setContentStreams(streams);
         SolrQueryResponse response = new SolrQueryResponse();
 
@@ -161,16 +167,27 @@ public class SolrMessageQueue extends RequestHandlerBase implements SolrCoreAwar
     /**
     * Worker thread. This is spawned for each message consumed.
     * @author rnoble
+    * @author jatherton
     */
-    private class QueueUpdateWorker extends Thread{
+    public  class QueueUpdateWorker extends Thread{ 
         QueueingConsumer.Delivery delivery;
+        
         public QueueUpdateWorker(QueueingConsumer.Delivery delivery){
             super();
             this.delivery = delivery;
         }
 
-        public void run() {
-            String message = new String(delivery.getBody());
+        public void run(){
+            String message =  "";
+            try
+            {
+                message = new MessageDecoder().Decode(delivery.getBody());
+            }
+            catch(UnsupportedEncodingException UEEx)
+            {
+                logger.log(Level.ERROR, UEEx.getMessage());
+            }
+            logger.log(Level.DEBUG, message);
             SolrQueryResponse result = performUpdateRequest(plugin_handler, getParams(), message);
             //TODO: allow for the RPC round trip.
             //also allow for failures.
