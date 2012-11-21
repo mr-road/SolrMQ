@@ -23,10 +23,7 @@ At the moment it is a fire-and-forget standard queue.
 We will add in other queue mechanisms shortly, and add in error
 handeling, such as logging, and error queues.
 
-Shameless Company Plug:
-======================
-I wrote this while at Tangent-Snowball, as part of Labs, tangential to a project.
-I was given permission to build this and open this.
-http://www.tangentlabs.co.uk/
+Added logging to help track down a number of errors I was having with EncodingExceptions.
+Updated to work with amqp-client 2.8.4.
  
 
