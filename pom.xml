@@ -2,7 +2,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>SolrMQ</groupId>
   <artifactId>SolrMQ</artifactId>
-  <version>0.0.1-SNAPSHOT</version>
+  <version>001</version>
   <dependencies>
   	<dependency>
 	  <groupId>com.rabbitmq</groupId>

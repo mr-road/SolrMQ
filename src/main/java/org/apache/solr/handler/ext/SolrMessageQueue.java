@@ -1,37 +1,25 @@
 package org.apache.solr.handler.ext;
 
+import com.rabbitmq.client.*;
 import java.io.IOException;
-import java.net.URL;
+import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
-
+import org.apache.log4j.Level;
+import org.apache.log4j.Logger;
 import org.apache.solr.common.params.MultiMapSolrParams;
-import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.request.SolrQueryRequestBase;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.util.plugin.SolrCoreAware;
-
-import com.rabbitmq.client.Channel;
-import com.rabbitmq.client.Connection;
-import com.rabbitmq.client.ConnectionFactory;
-import com.rabbitmq.client.ConsumerCancelledException;
-import com.rabbitmq.client.QueueingConsumer;
-import com.rabbitmq.client.ShutdownSignalException;
-import java.io.UnsupportedEncodingException;
-
-import org.apache.solr.request.SolrQueryRequestBase;
-
-import org.apache.log4j.Logger;
-import org.apache.log4j.Level;
 
 public class SolrMessageQueue extends RequestHandlerBase implements SolrCoreAware {
 
@@ -39,7 +27,7 @@ public class SolrMessageQueue extends RequestHandlerBase implements SolrCoreAwar
     protected ConnectionFactory factory;
     protected String queue;
     protected String plugin_handler;
-    protected Boolean durable = Boolean.FALSE;
+    protected Boolean durable = Boolean.TRUE;
     protected SolrCore core;
 
     Logger  logger = Logger.getLogger("org.apache.solr.handler.ext.SolrMessageQueue");
@@ -134,33 +122,33 @@ public class SolrMessageQueue extends RequestHandlerBase implements SolrCoreAwar
         private java.util.Map<String, Object> nullArgs = null;
         private boolean autoAck = true;
 
+        @Override
         public void run() {
             Connection connection;
 
             try {
+                logger.log(Level.INFO, "Started QueueListener");
                 connection = factory.newConnection();
                 Channel channel = connection.createChannel();
                 channel.queueDeclare(queue, durable.booleanValue(), exclusive, autoDelete, nullArgs);
                 QueueingConsumer consumer = new QueueingConsumer(channel);
                 channel.basicConsume(queue, autoAck, consumer);
-
+                logger.log(Level.INFO, "Configured QueueListener");
                 while (true) {
                     QueueingConsumer.Delivery delivery = consumer.nextDelivery();
                     QueueUpdateWorker worker = new QueueUpdateWorker(delivery);
                     worker.start();
                 }
             } catch (IOException e) {
-                e.printStackTrace();
+                 logger.log(Level.ERROR, e.getMessage());
             } catch (ShutdownSignalException e) {
-                // TODO Auto-generated catch block
-                e.printStackTrace();
+                 logger.log(Level.ERROR, e.getMessage());
             } catch (ConsumerCancelledException e) {
-                // TODO Auto-generated catch block
-                e.printStackTrace();
+                logger.log(Level.ERROR, e.getMessage());
             } catch (InterruptedException e) {
-                // TODO Auto-generated catch block
-                e.printStackTrace();
+                logger.log(Level.ERROR, e.getMessage());
             }
+            logger.log(Level.INFO, "Exiting QueueListener");
         }
     }
 
@@ -177,6 +165,7 @@ public class SolrMessageQueue extends RequestHandlerBase implements SolrCoreAwar
             this.delivery = delivery;
         }
 
+        @Override
         public void run(){
             String message =  "";
             try
