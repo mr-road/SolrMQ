@@ -17,11 +17,10 @@ import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.SolrQueryResponse;
 
     /**
-    * Worker thread. This is spawned for each message consumed.
     * @author rnoble
     * @author jatherton
     */
-    public class QueueUpdateWorker extends Thread{ 
+    public class QueueUpdateWorker{ 
         QueueingConsumer.Delivery delivery;
         String plugin_handler;
         protected SolrCore core;
@@ -34,8 +33,7 @@ import org.apache.solr.response.SolrQueryResponse;
             this.plugin_handler = plugin_handler;
         }
 
-        @Override
-        public void run(){
+        public Boolean update(){
             String message =  "";
             try
             {
@@ -46,9 +44,11 @@ import org.apache.solr.response.SolrQueryResponse;
                 logger.log(Level.ERROR, UEEx.getMessage());
             }
             logger.log(Level.DEBUG, message);
+            
             SolrQueryResponse result = performUpdateRequest(plugin_handler, getParams(), message);
-            //TODO: allow for the RPC round trip.
+            
             //also allow for failures.
+            return true;
         }
 
         /**

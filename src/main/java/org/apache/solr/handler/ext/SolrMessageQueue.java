@@ -16,7 +16,6 @@ public class SolrMessageQueue extends RequestHandlerBase implements SolrCoreAwar
     protected String mqHost;
     protected ConnectionFactory factory;
     protected String queue;
-    //protected Integer queueDequeueDelay;
     protected String plugin_handler;
     protected Boolean durable = Boolean.TRUE;
     protected SolrCore core;
@@ -28,7 +27,6 @@ public class SolrMessageQueue extends RequestHandlerBase implements SolrCoreAwar
     @Override
     public void init(NamedList args) {
         super.init(args);
-        //this.initArgs.get("messageQueueHost");
         mqHost = (String) this.initArgs.get("messageQueueHost");
         queue = (String) this.initArgs.get("queue");
         plugin_handler = (String) this.initArgs.get("updateHandlerName");
@@ -80,7 +78,8 @@ public class SolrMessageQueue extends RequestHandlerBase implements SolrCoreAwar
 
     /**
     * Listener thread. This is the core listener.
-    * Any message consumed spawns a new thread for handling. 
+    * The next message is consumed only when the previous message has been 
+    * processed to stop upserts over writing delete actions.
     *
     * @author rnoble
     * @author jatherton
@@ -107,7 +106,7 @@ public class SolrMessageQueue extends RequestHandlerBase implements SolrCoreAwar
                 while (true) {
                     QueueingConsumer.Delivery delivery = consumer.nextDelivery();
                     QueueUpdateWorker worker = new QueueUpdateWorker(delivery, plugin_handler);
-                    worker.start();
+                    worker.update();
                 }
             } catch (IOException e) {
                  logger.log(Level.ERROR, e.getMessage());
