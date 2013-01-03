@@ -65,8 +65,6 @@ public class SolrMessageQueue extends RequestHandlerBase implements SolrCoreAwar
         rsp.add("handler", plugin_handler);
         rsp.add("durable", durable.toString());
     }
-	
-    
 
     /**
     * This gives us a handle to the SolrCore
@@ -105,7 +103,7 @@ public class SolrMessageQueue extends RequestHandlerBase implements SolrCoreAwar
                 logger.log(Level.INFO, "Configured QueueListener");
                 while (true) {
                     QueueingConsumer.Delivery delivery = consumer.nextDelivery();
-                    QueueUpdateWorker worker = new QueueUpdateWorker(delivery, plugin_handler);
+                    QueueUpdateWorker worker = new QueueUpdateWorker(delivery, plugin_handler, core);
                     worker.update();
                 }
             } catch (IOException e) {

@@ -27,10 +27,10 @@ import org.apache.solr.response.SolrQueryResponse;
         
         Logger  logger = Logger.getLogger("org.apache.solr.handler.ext.QueueUpdateWorker");
         
-        public QueueUpdateWorker(QueueingConsumer.Delivery delivery, String plugin_handler){
-            super();
+        public QueueUpdateWorker(QueueingConsumer.Delivery delivery, String plugin_handler, SolrCore core){
             this.delivery = delivery;
             this.plugin_handler = plugin_handler;
+            this.core = core;
         }
 
         public Boolean update(){
@@ -47,6 +47,9 @@ import org.apache.solr.response.SolrQueryResponse;
             
             SolrQueryResponse result = performUpdateRequest(plugin_handler, getParams(), message);
             
+            if( null != result.getException()){
+                logger.log(Level.ERROR, result.getException().getMessage());
+            }
             //also allow for failures.
             return true;
         }
